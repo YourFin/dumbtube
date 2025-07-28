@@ -48,6 +48,7 @@ dependencies:
 - di-df1
 - di-handle
 - effectful
+- effectful-core
 - effectful-th
 - generic-optics
 - optics
@@ -75,6 +76,8 @@ dependencies:
 - attoparsec
 - http-media
 - warp
+- warp-tls
+- mtl
 
 ghc-options:
 - -Wall
@@ -103,6 +106,11 @@ default-extensions:
 # defined below is just a thin wrapper.
 library:
   source-dirs: src
+  include-dirs: c-include
+  c-sources:
+    - c-source/tss2-shim.c
+  extra-libraries:
+    - tss2-fapi
   when:
   - condition: (flag(dev)) || (flag(library-only))
     then:

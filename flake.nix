@@ -38,6 +38,7 @@
             hPkgs.fourmolu
             hPkgs.haskell-language-server
             stack-wrapped
+            unstable.openssl
           ];
           # Wrap Stack to work with our Nix integration. We don't want to modify
           # stack.yaml so non-Nix users don't notice anything.
@@ -59,6 +60,7 @@
           };
           libs = [
             pkgs.zlib
+            pkgs.tpm2-tss
           ];
         in
         {

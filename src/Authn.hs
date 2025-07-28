@@ -1,30 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
+-- |
 
-module Application where
-
--- import Control.Monad.Except
--- import Control.Monad.Reader
-import Data.Aeson
-import Data.Aeson.Types
-import Data.Attoparsec.ByteString
-import Data.ByteString (ByteString)
-import Data.List
-import Data.Maybe
-import Data.Time.Calendar
-import GHC.Generics
-import Lucid
-import Network.HTTP.Media ((//), (/:))
-import Network.Wai
-import Network.Wai.Handler.Warp
-import Servant
-import Servant.HTML.Lucid
-import Servant.Types.SourceT (source)
-import System.Directory
-import Yf.Tpm qualified as Tpm
-
-type GetHTML = Get '[HTML] (Html ())
-
-type API = GetHTML
+module Authn where
 
 {-
 Works two ways:
@@ -38,10 +14,11 @@ Works two ways:
   Page looks up authn stored in browser
   Client signs response
 
+
 {
   rp: { // relying party
     id: <origin> i.e. https://5z.vc
-    name: "5z.vc"
+    name: "5z.vc" // deprecated in new versions, but required
   },
   user: {
     id: <64 bytes>, // PK, random, sever side
@@ -78,23 +55,3 @@ Works two ways:
 
 }
 -}
-
-server1 :: Server API
-server1 = pure home
-
-api :: Proxy API
-api = Proxy
-
-appMain :: IO ()
--- appMain = run 8081 (serve api server1)
-appMain = do
-  ctx <- Tpm.initialize
-  randomData <- Tpm.random ctx 3
-  print $ show randomData
-
-home :: Html ()
-home = html_ $ do
-  head_ $ do
-    title_ "Hello!"
-  body_ $ do
-    h1_ "Hello, world!"
