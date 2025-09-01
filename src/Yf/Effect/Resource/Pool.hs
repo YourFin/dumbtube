@@ -45,9 +45,6 @@ run' = interpret $ \effEnv -> \case
 withBorrowed :: (Pool p :> es) => (p -> Eff es a) -> Eff es a
 withBorrowed mkAction = send $ Borrow mkAction
 
--- runPool ::
--- runPool
-
 -- Control.Concurrent.getNumCapabilities
 
 data PoolBuilder_0 = PoolBuilder_0
@@ -166,6 +163,9 @@ destroyResource destroy PoolBuilder_1{..} = PoolBuilder_2{create = inject create
 threads :: RelativeToThreadcount
 threads = RelExprThreadCount
 
+systemThreads :: RelativeToThreadcount
+systemThreads = RelExprThreadCount
+
 maxResidency :: RelativeToThreadcount -> PoolBuilder_2 es p -> PoolBuilder es p
 maxResidency max PoolBuilder_2{..} = PoolBuilder{..}
  where
@@ -209,8 +209,7 @@ run builder action = do
   capabilities <- liftIO Control.Concurrent.getNumCapabilities
   let realStripes = resolveRelativeToThreadcount stripes capabilities
   let realMax = resolveRelativeToThreadcount max capabilities
-  unliftStrat <- Effectful.unliftStrategy
-  cfg' <- withEffToIO unliftStrat $ \toIO ->
+  cfg' <- withEffToIO (Effectful.ConcUnlift Effectful.Persistent Effectful.Unlimited) $ \toIO ->
     pure $
       Data.Pool.defaultPoolConfig
         (toIO $ inject create)

@@ -17,9 +17,17 @@ module Yf.Effect.Servant (
 
 import Control.Monad.Except qualified as T
 import Data.Kind (Type)
-import Effectful (Eff, Effect, IOE, liftIO, (:>))
-import Effectful.Dispatch.Static
-import Effectful.Dispatch.Static.Primitive (Env, cloneEnv)
+import Effectful (
+  Eff,
+  Effect,
+  IOE,
+  Limit (..),
+  Persistence (Ephemeral, Persistent),
+  UnliftStrategy (..),
+  liftIO,
+  withEffToIO,
+  (:>),
+ )
 import Effectful.Error.Static qualified as ErrorStatic
 import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Handler.WarpTLS (TLSSettings, tlsSettings)
@@ -30,22 +38,25 @@ import Servant hiding ((:>))
 -- https://github.com/Kleidukos/servant-effectful/blob/22af09642078d5296b524495ad8213bf2ace62d2/src/Effectful/Servant.hs
 
 -- | Transform the Eff monad into a servant Handler.
-interpretServer :: Env es -> Eff (ErrorPage : es) a -> Servant.Handler a
-interpretServer env action = do
-  v <- liftIO $ do
-    es' <- cloneEnv env
-    unEff (ErrorStatic.runErrorNoCallStack action) es'
-  T.liftEither v
+interpretServer ::
+  (forall r. Eff es r -> IO r)
+  -> Eff (ErrorPage : es) resp
+  -> Servant.Handler resp
+interpretServer toIO serveResp = do
+  result <- liftIO $ toIO (ErrorStatic.runErrorNoCallStack serveResp)
+  T.liftEither result
 
--- | Convert an effectful server into a wai application.
-serveEff ::
-  forall (api :: Type) (context :: [Type]) (es :: [Effect]).
-  (HasServer api context, ServerContext context) =>
-  Env es
-  -> Context context
-  -> ServerT api (Eff (ErrorPage : es))
-  -> Application
-serveEff env ctx = Servant.serveWithContextT (Proxy @api) ctx (interpretServer env)
+{- | IMPORTANT: Unlift strategy for how to handle doling out the
+effect environment to spawned threads.
+What (I think) this is saying:
+1. Ephemeral: We want web server workers to have a fresh copy
+2. Don't place a limit on the number of times that happens
+-}
+webServerUnliftStrat :: UnliftStrategy
+webServerUnliftStrat =
+  ConcUnlift
+    Ephemeral
+    Unlimited
 
 -- | Deploy an effectful TLS server with a context.
 runWarpTLSServerSettingsContext ::
@@ -56,9 +67,11 @@ runWarpTLSServerSettingsContext ::
   -> Context context
   -> ServerT api (Eff (ErrorPage : es))
   -> Eff es ()
-runWarpTLSServerSettingsContext tlsSettings settings ctx server = do
-  unsafeEff $ \es -> do
-    WarpTLS.runTLS tlsSettings settings (serveEff @api es ctx server)
+runWarpTLSServerSettingsContext tlsSettings settings ctx server = withEffToIO webServerUnliftStrat $ \toIO ->
+  WarpTLS.runTLS
+    tlsSettings
+    settings
+    (Servant.serveWithContextT (Proxy @api) ctx (interpretServer toIO) server)
 
 -- | Deploy an effectful server.
 runWarpTLSServerSettings ::
@@ -79,9 +92,10 @@ runWarpServerSettingsContext ::
   -> Context context
   -> ServerT api (Eff (ErrorPage : es))
   -> Eff es ()
-runWarpServerSettingsContext settings ctx server = do
-  unsafeEff $ \es -> do
-    Warp.runSettings settings (serveEff @api es ctx server)
+runWarpServerSettingsContext settings ctx server = withEffToIO webServerUnliftStrat $ \fromIO ->
+  Warp.runSettings
+    settings
+    (Servant.serveWithContextT (Proxy @api) ctx (interpretServer fromIO) server)
 
 -- | Deploy an effectful server.
 runWarpServerSettings ::
@@ -114,3 +128,26 @@ runTLS tlsSettings port =
     (Warp.defaultSettings & Warp.setPort port)
 
 type ErrorPage = ErrorStatic.Error ServerError
+
+--------------------------------------------------------------------
+-- Original interpretServer; has bugs when run as with "set up"   --
+-- effects. Notably has a way to create WAI applications, though. --
+--------------------------------------------------------------------
+
+-- -- | Transform the Eff monad into a servant Handler.
+-- interpretServer :: Env es -> Eff (ErrorPage : es) a -> Servant.Handler a
+-- interpretServer env action = do
+--   v <- liftIO $ do
+--     es' <- cloneEnv env
+--     unEff (ErrorStatic.runErrorNoCallStack action) es'
+--   T.liftEither v
+
+-- -- | Convert an effectful server into a wai application.
+-- serveEff ::
+--   forall (api :: Type) (context :: [Type]) (es :: [Effect]).
+--   (HasServer api context, ServerContext context) =>
+--   Env es
+--   -> Context context
+--   -> ServerT api (Eff (ErrorPage : es))
+--   -> Application
+-- serveEff env ctx = Servant.serveWithContextT (Proxy @api) ctx (interpretServer env)

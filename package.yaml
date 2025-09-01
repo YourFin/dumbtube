@@ -62,6 +62,7 @@ dependencies:
 - text
 - time
 - unliftio
+- ulid
 - base >= 4.7 && < 5
 - name: base
   mixin:
@@ -80,7 +81,12 @@ dependencies:
 - warp
 - warp-tls
 - mtl
+- raw-strings-qq
+- string-interpolate
+- crypton
 - resource-pool
+- streaming
+- direct-sqlite
 
 ghc-options:
 - -Wall
@@ -104,6 +110,9 @@ default-extensions:
 - DuplicateRecordFields
 - RecordWildCards
 - NamedFieldPuns
+- GADTs
+- DataKinds
+- QuasiQuotes
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.
