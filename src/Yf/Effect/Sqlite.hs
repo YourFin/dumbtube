@@ -54,7 +54,7 @@ import Effectful.Error.Static (throwError)
 import Effectful.Error.Static qualified as Effectful.Error
 import Effectful.Reader.Static (Reader, runReader)
 import Effectful.Reader.Static qualified as Reader
-import Effectful.Resource (ReleaseKey, Resource, allocate)
+import Effectful.Resource (ReleaseKey, Resource, allocate, release)
 import Effectful.Resource qualified as EffResource
 import Effectful.TH (makeEffect)
 import Streaming hiding (run)
@@ -88,8 +88,10 @@ runStatic' = interpret $ \effEnv -> \case
   WithStatement query action -> do
     conn <- Reader.ask @Smpl.Connection
     unliftStrat <- Effectful.unliftStrategy
-    (_, stmt) <- allocate (Smpl.openStatement conn query) Smpl.closeStatement
-    localUnlift effEnv unliftStrat $ \unlift -> unlift (action stmt)
+    (releaseKey, stmt) <- allocate (Smpl.openStatement conn query) Smpl.closeStatement
+    result <- localUnlift effEnv unliftStrat $ \unlift -> unlift (action stmt)
+    release releaseKey
+    pure result
   NextRow statement ->
     liftIO $ Smpl.nextRow statement
   SetTrace mLogger -> do
@@ -157,8 +159,10 @@ runEasy ::
   -> Eff (Sqlite : es) a
   -> Eff es a
 runEasy db action = do
-  (_releaseKey, conn) <- EffResource.allocate (Smpl.open db) Smpl.close
-  runConn conn action
+  (releaseKey, conn) <- EffResource.allocate (Smpl.open db) Smpl.close
+  result <- runConn conn action
+  release releaseKey
+  pure result
 
 runEasyMemory ::
   (IOE :> es, Resource :> es) =>

@@ -18,7 +18,7 @@ import Effectful.Dispatch.Dynamic (
  )
 import Effectful.Reader.Dynamic (Reader)
 import Effectful.Reader.Dynamic qualified as Reader
-import Effectful.Resource (Resource, allocate)
+import Effectful.Resource (Resource, allocate, release)
 import Optics
 import Text.Show hiding (show)
 
@@ -36,11 +36,13 @@ run' = interpret $ \effEnv -> \case
   Borrow mkAction -> do
     pool <- Reader.ask @(Data.Pool.Pool p)
     unliftStrat <- Effectful.unliftStrategy
-    (_, (handle, _localPool)) <-
+    (releaseKey, (handle, _localPool)) <-
       allocate
         (Data.Pool.takeResource pool)
         (\(handle, localPool) -> Data.Pool.putResource localPool handle)
-    localUnlift effEnv unliftStrat $ \unlift -> unlift (mkAction handle)
+    result <- localUnlift effEnv unliftStrat $ \unlift -> unlift (mkAction handle)
+    release releaseKey
+    pure result
 
 withBorrowed :: (Pool p :> es) => (p -> Eff es a) -> Eff es a
 withBorrowed mkAction = send $ Borrow mkAction
