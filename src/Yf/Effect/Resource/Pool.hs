@@ -16,9 +16,9 @@ import Effectful.Dispatch.Dynamic (
   localUnlift,
   send,
  )
+import Effectful.Exception (bracket)
 import Effectful.Reader.Dynamic (Reader)
 import Effectful.Reader.Dynamic qualified as Reader
-import Effectful.Resource (Resource, allocate, release)
 import Optics
 import Text.Show hiding (show)
 
@@ -29,20 +29,17 @@ type instance DispatchOf (Pool p) = Effectful.Dynamic
 
 run' ::
   forall p a es.
-  (IOE :> es, Resource :> es, Reader (Data.Pool.Pool p) :> es) =>
+  (IOE :> es, Reader (Data.Pool.Pool p) :> es) =>
   Eff (Pool p : es) a
   -> Eff es a
 run' = interpret $ \effEnv -> \case
   Borrow mkAction -> do
     pool <- Reader.ask @(Data.Pool.Pool p)
     unliftStrat <- Effectful.unliftStrategy
-    (releaseKey, (handle, _localPool)) <-
-      allocate
-        (Data.Pool.takeResource pool)
-        (\(handle, localPool) -> Data.Pool.putResource localPool handle)
-    result <- localUnlift effEnv unliftStrat $ \unlift -> unlift (mkAction handle)
-    release releaseKey
-    pure result
+    bracket
+      (liftIO $ Data.Pool.takeResource pool)
+      (\(handle, localPool) -> liftIO $ Data.Pool.putResource localPool handle)
+      (\(handle, _) -> localUnlift effEnv unliftStrat $ \unlift -> unlift (mkAction handle))
 
 withBorrowed :: (Pool p :> es) => (p -> Eff es a) -> Eff es a
 withBorrowed mkAction = send $ Borrow mkAction
@@ -191,7 +188,7 @@ stripes = (#stripes .~)
 
 runFromPool ::
   forall p es a.
-  (IOE :> es, Resource :> es) =>
+  (IOE :> es) =>
   Data.Pool.Pool p
   -> Eff (Pool p : es) a
   -> Eff es a
@@ -202,7 +199,7 @@ runFromPool pool action =
     & Reader.runReader pool
 
 run ::
-  (IOE :> es, Resource :> es, Subset poolEs es) =>
+  (IOE :> es, Subset poolEs es) =>
   PoolBuilder poolEs p
   -> Eff (Pool p : es) a
   -> Eff es a
@@ -219,5 +216,7 @@ run builder action = do
         ttl
         realMax
   let cfg = Data.Pool.setNumStripes (Just realStripes) cfg'
-  (_, pp) <- allocate (Data.Pool.newPool cfg) Data.Pool.destroyAllResources
-  runFromPool pp action
+  bracket
+    (liftIO $ Data.Pool.newPool cfg)
+    (liftIO . Data.Pool.destroyAllResources)
+    (\p -> runFromPool p action)

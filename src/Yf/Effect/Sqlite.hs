@@ -40,7 +40,6 @@ import Yf.Effect.Log qualified as Log
 import Yf.Effect.Resource.Pool (Pool)
 import Yf.Effect.Resource.Pool qualified as Pool
 
-import Control.Monad.Trans.Resource (MonadResource)
 import Effectful (DispatchOf, Eff, Effect, IOE, withEffToIO, (:>))
 import Effectful qualified
 import Effectful.Dispatch.Dynamic (
@@ -52,10 +51,9 @@ import Effectful.Dispatch.Dynamic (
  )
 import Effectful.Error.Static (throwError)
 import Effectful.Error.Static qualified as Effectful.Error
+import Effectful.Exception (bracket)
 import Effectful.Reader.Static (Reader, runReader)
 import Effectful.Reader.Static qualified as Reader
-import Effectful.Resource (ReleaseKey, Resource, allocate, release)
-import Effectful.Resource qualified as EffResource
 import Effectful.TH (makeEffect)
 import Streaming hiding (run)
 import Streaming.Prelude qualified as S
@@ -81,17 +79,17 @@ data Sqlite :: Effect where
 type instance DispatchOf Sqlite = Effectful.Dynamic
 
 runStatic' ::
-  (IOE :> es, Resource :> es, Reader Smpl.Connection :> es) =>
+  (IOE :> es, Reader Smpl.Connection :> es) =>
   Eff (Sqlite : es) a
   -> Eff es a
 runStatic' = interpret $ \effEnv -> \case
   WithStatement query action -> do
     conn <- Reader.ask @Smpl.Connection
     unliftStrat <- Effectful.unliftStrategy
-    (releaseKey, stmt) <- allocate (Smpl.openStatement conn query) Smpl.closeStatement
-    result <- localUnlift effEnv unliftStrat $ \unlift -> unlift (action stmt)
-    release releaseKey
-    pure result
+    bracket
+      (liftIO $ Smpl.openStatement conn query)
+      (liftIO . Smpl.closeStatement)
+      (\stmt -> localUnlift effEnv unliftStrat $ \unlift -> unlift (action stmt))
   NextRow statement ->
     liftIO $ Smpl.nextRow statement
   SetTrace mLogger -> do
@@ -110,14 +108,16 @@ runStatic' = interpret $ \effEnv -> \case
 
 -- TODO: Support tracing
 runPool' ::
-  (IOE :> es, Resource :> es, Pool Smpl.Connection :> es) =>
+  (IOE :> es, Pool Smpl.Connection :> es) =>
   Eff (Sqlite : es) a
   -> Eff es a
 runPool' = interpret $ \effEnv -> \case
   WithStatement query action -> Pool.withBorrowed $ \conn -> do
     unliftStrat <- Effectful.unliftStrategy
-    (_, stmt) <- allocate (Smpl.openStatement conn query) Smpl.closeStatement
-    localUnlift effEnv unliftStrat $ \unlift -> unlift (action stmt)
+    bracket
+      (liftIO $ Smpl.openStatement conn query)
+      (liftIO . Smpl.closeStatement)
+      (\stmt -> localUnlift effEnv unliftStrat $ \unlift -> unlift (action stmt))
   NextRow statement ->
     liftIO $ Smpl.nextRow statement
   SetTrace mLogger -> pure () -- TODO: Support tracing
@@ -137,7 +137,7 @@ pool db =
     & Pool.destroyResource (liftIO . Smpl.close)
 
 runConn ::
-  (IOE :> es, Resource :> es) =>
+  (IOE :> es) =>
   Smpl.Connection
   -> Eff (Sqlite : es) a
   -> Eff es a
@@ -154,24 +154,21 @@ runConn conn action =
 -- Note: Might be worth re-implementing with
 -- Text in terms of the sqlite primitives
 runEasy ::
-  (IOE :> es, Resource :> es) =>
+  (IOE :> es) =>
   String
   -> Eff (Sqlite : es) a
   -> Eff es a
-runEasy db action = do
-  (releaseKey, conn) <- EffResource.allocate (Smpl.open db) Smpl.close
-  result <- runConn conn action
-  release releaseKey
-  pure result
+runEasy db action =
+  bracket (liftIO $ Smpl.open db) (liftIO . Smpl.close) (\conn -> runConn conn action)
 
 runEasyMemory ::
-  (IOE :> es, Resource :> es) =>
+  (IOE :> es) =>
   Eff (Sqlite : es) a
   -> Eff es a
 runEasyMemory = runEasy ":memory:"
 
 runPool ::
-  (IOE :> es, Resource :> es) =>
+  (IOE :> es) =>
   Pool.PoolBuilder es Smpl.Connection
   -> Eff (Sqlite : es) a
   -> Eff es a
@@ -186,7 +183,7 @@ withStatement q useStmt = send (WithStatement q useStmt)
 
 ---- Re-implemenatation of niceities
 query ::
-  (Smpl.FromRow r, Smpl.ToRow q, Sqlite :> es, Resource :> es) =>
+  (Smpl.FromRow r, Smpl.ToRow q, Sqlite :> es) =>
   Smpl.Query
   -> q
   -> (Stream (Of r) (Eff es) () -> Eff es a)
@@ -196,7 +193,7 @@ query q params consumeStream = withStatement q $ \stmt -> do
   consumeStream (S.reread (send . NextRow) stmt)
 
 query_ ::
-  (Smpl.FromRow r, Sqlite :> es, Resource :> es) =>
+  (Smpl.FromRow r, Sqlite :> es) =>
   Smpl.Query
   -> (Stream (Of r) (Eff es) () -> Eff es a)
   -> Eff es a

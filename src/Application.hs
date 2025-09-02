@@ -4,6 +4,7 @@ module Application where
 
 -- import Control.Monad.Except
 -- import Control.Monad.Reader
+
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Attoparsec.ByteString
@@ -14,6 +15,7 @@ import Data.Time.Calendar
 import Effectful hiding ((:>))
 import Effectful qualified as Effectful
 import Effectful.Error.Static qualified as Error
+import Effectful.Exception qualified
 import Effectful.Fail (Fail, runFail)
 import Effectful.Resource (Resource)
 import Effectful.Resource qualified as Resource
@@ -97,29 +99,33 @@ Works two ways:
 -}
 
 server1 ::
-  ((Effectful.:>) Resource es, (Effectful.:>) ErrorPage es, (Effectful.:>) Sqlite es) =>
+  ( (Effectful.:>) Resource es
+  , (Effectful.:>) ErrorPage es
+  , (Effectful.:>) Sqlite es
+  ) =>
   ServerT API (Eff es)
-server1 =
-  failToErrorPage
-    ( do
-        Sqlite.execute_
-          [r|
+server1 = failToErrorPage $ do
+  Sqlite.execute_
+    [r|
     UPDATE Data
     SET value = ((SELECT value FROM Data WHERE key = 'visitor_num') + 1);
     |]
-        [[viewCount :: Int]] <-
-          Sqlite.query_ [r|SELECT value FROM Data where key = 'visitor_num';|] S.toList_
-        pure $ home viewCount
-    )
+  [[viewCount :: Int]] <-
+    Sqlite.query_ [r|SELECT value FROM Data where key = 'visitor_num';|] S.toList_
+  pure $ home viewCount
 
 failToErrorPage ::
-  (HasCallStack, (Effectful.:>) ErrorPage es) => Eff (Fail : es) a -> Eff es a
+  (HasCallStack, (Effectful.:>) ErrorPage es) =>
+  Eff (Fail : es) a
+  -> Eff es a
 failToErrorPage action = do
-  result <- runFail action
+  result <- Effectful.Exception.trySync $ runFail action
   case result of
     Left ex ->
+      Error.throwError_ (errorPage $ displayException ex)
+    Right (Left ex) ->
       Error.throwError_ (errorPage ex)
-    Right val ->
+    Right (Right val) ->
       pure val
  where
   errorPage :: String -> ServerError
@@ -143,9 +149,12 @@ api = Proxy
 
 appMain :: IO ()
 appMain = runMain $ do
+  Sqlite.execute_ "PRAGMA journal_mode=WAL;"
+  Sqlite.execute_ "CREATE TABLE IF NOT EXISTS Data (key TEXT PRIMARY KEY, value BLOB);"
   Sqlite.execute_
-    "CREATE TABLE Data (key TEXT PRIMARY KEY, value BLOB);"
-  Sqlite.execute_ "INSERT INTO Data (key, value) VALUES ('visitor_num', 0);"
+    [r|
+      INSERT OR IGNORE INTO Data (key, value) VALUES ('visitor_num', 0)
+    |]
   runTLS
     @API
     (tlsSettings "/home/pen/.local/yf/cert.pem" "/home/pen/.local/yf/key.pem")
@@ -156,9 +165,9 @@ runMain :: Eff '[Sqlite, Resource, IOE] a -> IO a
 runMain action =
   action
     & Sqlite.runPool
-      ( Sqlite.pool "file::memory:?cache=shared"
-          & Pool.maxResidency (Pool.systemThreads * Pool.systemThreads)
-          & (#max .~ 4)
+      ( Sqlite.pool "./test.sqlite"
+          & Pool.maxResidency 1 -- (Pool.systemThreads * Pool.systemThreads)
+          -- & (#max .~ systemThreads * threads)
           & Pool.stripes 1
       )
     & Resource.runResource
