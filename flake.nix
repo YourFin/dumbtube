@@ -28,12 +28,12 @@
         }:
         let
           unstable = inputs.unstable.legacyPackages.${system};
-          hPkgs = unstable.haskell.packages."ghc984";
+          hPkgs = unstable.haskell.packages."ghc910";
           devTools = [
             hPkgs.ghc
             hPkgs.ghcid
             hPkgs.hoogle
-            hPkgs.retrie
+            # hPkgs.retrie
             hPkgs.implicit-hie
             hPkgs.fourmolu
             hPkgs.haskell-language-server

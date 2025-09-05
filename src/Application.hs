@@ -17,8 +17,6 @@ import Effectful qualified as Effectful
 import Effectful.Error.Static qualified as Error
 import Effectful.Exception qualified
 import Effectful.Fail (Fail, runFail)
-import Effectful.Resource (Resource)
-import Effectful.Resource qualified as Resource
 import GHC.Generics
 import Lucid
 import Network.HTTP.Media ((//), (/:))
@@ -99,8 +97,7 @@ Works two ways:
 -}
 
 server1 ::
-  ( (Effectful.:>) Resource es
-  , (Effectful.:>) ErrorPage es
+  ( (Effectful.:>) ErrorPage es
   , (Effectful.:>) Sqlite es
   ) =>
   ServerT API (Eff es)
@@ -161,7 +158,7 @@ appMain = runMain $ do
     8443
     server1
 
-runMain :: Eff '[Sqlite, Resource, IOE] a -> IO a
+runMain :: Eff '[Sqlite, IOE] a -> IO a
 runMain action =
   action
     & Sqlite.runPool
@@ -170,7 +167,6 @@ runMain action =
           -- & (#max .~ systemThreads * threads)
           & Pool.stripes 1
       )
-    & Resource.runResource
     & runEff
 
 -- appMain = do
