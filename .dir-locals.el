@@ -1,4 +1,5 @@
 ((haskell-mode . ((haskell-indent-spaces . 2)
                   (haskell-process-use-ghci . t)))
  (hamlet-mode . ((hamlet/basic-offset . 4)
-                 (haskell-process-use-ghci . t))))
+                 (haskell-process-use-ghci . t)))
+ (typescript-ts-mode . ((apheleia-formatter . (biome)))))

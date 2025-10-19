@@ -39,6 +39,11 @@
             hPkgs.haskell-language-server
             stack-wrapped
             unstable.openssl
+            unstable.pnpm
+            unstable.just
+            unstable.biome
+            unstable.typescript-language-server
+            unstable.typescript
           ];
           # Wrap Stack to work with our Nix integration. We don't want to modify
           # stack.yaml so non-Nix users don't notice anything.

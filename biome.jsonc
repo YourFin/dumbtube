@@ -1,0 +1,10 @@
+{
+  "formatter": {
+    "useEditorconfig": true
+  },
+  "javascript": {
+    "linter": {
+      "enabled": false
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "include": ["./script/", "eslint.config.mjs"],
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2023", "DOM"],
+    "libReplacement": true,
+    // Copied from https://www.npmjs.com/package/@tsconfig/strictest
+    "strict": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "isolatedModules": true,
+
+    "checkJs": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }
+}
