@@ -244,7 +244,7 @@ function mkThrough<T>(getT: () => T): DocumentPipeline.Through<T> {
 /**
  * Simple sample:
  * ```typescript
- * const form = querySelect("form");
+ * const form = querySelect("form#nameForm");
  *
  * form().addEventListener("submit", () => pipeDocument(
  *   input.text("#firstname"),
@@ -282,9 +282,9 @@ export function pipeDocument<Arg1, Rest extends unknown[]>(
 
 /**
  * Helper type for cases where we want to allow
- * trailers to narrow a query selection, but not
- * combinators that change the return type of the
- * query.
+ * narrowing an existing `Selector`'s query, but not
+ * any changes that change the return type of the
+ * querySelect.
  *
  * For example, if we have a helper function like:
  *
@@ -300,9 +300,9 @@ export function pipeDocument<Arg1, Rest extends unknown[]>(
  * or property, but something like `videoTime(" > p#fallbackText")` would be problematic,
  * as the result of the query selector is no longer a video element.
  *
- * Cases like this is where `SelectorOf` comes in handy; it can constrain the compound
+ * Using `SelectorOf`, we can constrain the compound
  * selector elements such that if they change the selected element type into something
- * not assignable to `Elt`, the `SelectorOf` type resolves to `never` and forces a
+ * not assignable to `Elt`, the `SelectorOf` type resolves to `SelectorOf.TypeError<>` and forces a
  * compilation error.
  *
  * I.e.:
