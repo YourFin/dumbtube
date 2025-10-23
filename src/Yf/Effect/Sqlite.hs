@@ -130,6 +130,8 @@ runPool' = interpret $ \effEnv -> \case
   Step (Smpl.Statement statement) ->
     liftIO $ Direct.step statement
 
+-- TODO: sqlite startup instructions?
+
 pool :: (IOE :> es) => String -> Pool.PoolBuilder_2 es Smpl.Connection
 pool db =
   Pool.pool

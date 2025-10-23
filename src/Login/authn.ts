@@ -91,8 +91,9 @@ export async function createCredentials(props: {
     display: string;
     id: string;
   };
+  // In order of preference
   algorithms: number[];
-  rp: string;
+  rpName: string;
 }) {
   const result = await navigator.credentials.create({
     publicKey: {
@@ -101,12 +102,17 @@ export async function createCredentials(props: {
         displayName: props.name.display,
         name: props.name.id,
       },
+      authenticatorSelection: {
+        residentKey: "required",
+        requireResidentKey: true,
+        userVerification: "discouraged",
+      },
       challenge: props.challenge,
       pubKeyCredParams: props.algorithms.map((coseId) => ({
         type: "public-key",
         alg: coseId,
       })),
-      rp: props.rp,
+      rp: { name: props.rpName },
     },
   });
   if (result === null) {

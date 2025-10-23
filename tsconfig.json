@@ -1,8 +1,17 @@
 {
-  "include": ["./script/", "eslint.config.mjs"],
+  "include": ["./src/**/*.ts", "eslint.config.mjs"],
   "compilerOptions": {
+    // check-only config
+    "rootDirs": ["src", "."],
     "noEmit": true,
-    "lib": ["ES2023", "DOM"],
+    "moduleResolution": "bundler",
+    "module": "es2022",
+
+    "paths": {
+      "~/*": ["./src/*"]
+    },
+    "lib": ["ES2024", "DOM"],
+    // For better-typescript-lib
     "libReplacement": true,
     // Copied from https://www.npmjs.com/package/@tsconfig/strictest
     "strict": true,

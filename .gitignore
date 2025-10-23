@@ -21,3 +21,5 @@ cabal.sandbox.config
 \#*
 dumbtube.cabal
 /.direnv/
+/node_modules
+/build

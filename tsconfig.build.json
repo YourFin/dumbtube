@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["eslint.config.mjs"],
+  "compilerOptions": {
+    "rootDirs": ["src"],
+    "outDir": "./build/js/",
+    "target": "es2024",
+    "inlineSourceMap": true,
+    "declaration": false,
+    "noEmit": false
+  }
+}

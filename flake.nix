@@ -38,12 +38,23 @@
             hPkgs.fourmolu
             hPkgs.haskell-language-server
             stack-wrapped
+            # Override to pull in https://github.com/tmux/tmux/pull/4422
+            (unstable.tmux.overrideAttrs {
+              src = unstable.fetchFromGitHub {
+                owner = "tmux";
+                repo = "tmux";
+                rev = "35ad72e56ffb2e8e09a2e2ac59bee0912fe45c6c";
+                hash = "sha256-81CIlZt+eG4m4HqVQgSbEjCHexF+1+QvaK86HOms1LQ=";
+              };
+            })
             unstable.openssl
             unstable.pnpm
             unstable.just
             unstable.biome
             unstable.typescript-language-server
             unstable.typescript
+            unstable.nushell
+            unstable.pnpm.configHook
           ];
           # Wrap Stack to work with our Nix integration. We don't want to modify
           # stack.yaml so non-Nix users don't notice anything.
@@ -75,10 +86,18 @@
           #devshells.default = {
 
           #};
-          devShells.default = pkgs.mkShell {
+          devShells.default = pkgs.mkShell rec {
             nativeBuildInputs = devTools;
             buildInputs = libs;
             LD_LIBRARY_PATH = unstable.lib.makeLibraryPath libs;
+            #pnpmDeps = unstable.pnpm.fetchDeps {
+            #  pname = "dumbtube-pnpm";
+            #  version = "0.0.0";
+            #  src = ./.;
+            #  fetcherVersion = 2;
+            #  hash = "sha256-ixCC5UOZLTdyPagXiOdtMusDmXWL2p4M63wVCI18V/M=";
+            #};
+            #PNPM_DEPS = pnpmDeps;
           };
 
           packages.default = pkgs.hello;

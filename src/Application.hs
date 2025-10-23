@@ -163,8 +163,7 @@ runMain action =
   action
     & Sqlite.runPool
       ( Sqlite.pool "./test.sqlite"
-          & Pool.maxResidency 1 -- (Pool.systemThreads * Pool.systemThreads)
-          -- & (#max .~ systemThreads * threads)
+          & Pool.maxResidency (Pool.systemThreads * Pool.systemThreads)
           & Pool.stripes 1
       )
     & runEff

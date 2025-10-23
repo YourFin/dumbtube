@@ -7,16 +7,17 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "tsc": "tsc",
+    "build": "tsc --project tsconfig.build.json",
     "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "agpl-3.0",
   "packageManager": "pnpm@10.15.0",
   "devDependencies": {
     "@eslint/js": "^9.38.0",
     "better-typescript-lib": "^2.12.0",
-    "eslint": "^9.36.0",
-    "typescript-eslint": "^8.44.1"
+    "eslint": "^9.38.0",
+    "typescript-eslint": "^8.46.2"
   }
 }

@@ -1,4 +1,4 @@
-import type { StrictlyParseSelector } from "./parse-document/typed-query-selector.js";
+import type { StrictlyParseSelector } from "~/parse-document/typed-query-selector.js";
 
 ////////////////////////
 // Core functionality //
