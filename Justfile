@@ -17,3 +17,7 @@ build-import-map:
     } 
     | into record
     | save -f build/importmap.json
+
+dev:
+  mkdir -p build
+  tmux -f .dev-tmux.conf -S build/tmux-sock
