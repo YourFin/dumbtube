@@ -1,5 +1,7 @@
 module Yf.Effect.Log.Level where
 
+import Relude
+
 import qualified Df1 as Df1
 
 data Level

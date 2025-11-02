@@ -31,7 +31,7 @@ import Database.SQLite.Simple qualified as ReExport (
   (:.) (..),
  )
 
-import Prelude hiding (Reader, runReader)
+import Relude hiding (Reader, runReader)
 
 import Yf.Effect.DB.Transaction (Transaction)
 import Yf.Effect.DB.Transaction qualified as Txn

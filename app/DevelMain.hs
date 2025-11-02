@@ -1,4 +1,10 @@
--- | Running your app inside GHCi.
+{-# LANGUAGE PackageImports #-}
+
+module DevelMain where
+
+import Relude
+
+-- Running your app inside GHCi.
 --
 -- This option provides significantly faster code reload compared to
 -- @yesod devel@. However, you do not get automatic code reload
@@ -6,7 +12,7 @@
 --
 -- 1. Start up GHCi
 --
--- $ stack ghci dumbtube:lib --no-load --work-dir .stack-work-devel
+-- \$ stack ghci dumbtube:lib --no-load --work-dir .stack-work-devel
 --
 -- 2. Load this module
 --
@@ -34,23 +40,21 @@
 -- If you change a template, you'll need to either exit GHCi and reload,
 -- or manually @touch@ another Haskell module.
 
-module DevelMain where
-
---import Prelude
---import Application (getApplicationRepl, shutdownApp)
+-- import Prelude
+-- import Application (getApplicationRepl, shutdownApp)
 --
---import Control.Monad ((>=>))
---import Control.Concurrent
---import Data.IORef
---import Foreign.Store
---import Network.Wai.Handler.Warp
---import GHC.Word
+-- import Control.Monad ((>=>))
+-- import Control.Concurrent
+-- import Data.IORef
+-- import Foreign.Store
+-- import Network.Wai.Handler.Warp
+-- import GHC.Word
 --
 ---- | Start or restart the server.
 ---- newStore is from foreign-store.
 ---- A Store holds onto some data across ghci reloads
---update :: IO ()
---update = do
+-- update :: IO ()
+-- update = do
 --    mtidStore <- lookupStore tidStoreNum
 --    case mtidStore of
 --      -- no server running
@@ -86,8 +90,8 @@ module DevelMain where
 --            (\_ -> putMVar done () >> shutdownApp site)
 --
 ---- | kill the server
---shutdown :: IO ()
---shutdown = do
+-- shutdown :: IO ()
+-- shutdown = do
 --    mtidStore <- lookupStore tidStoreNum
 --    case mtidStore of
 --      -- no server running
@@ -96,10 +100,16 @@ module DevelMain where
 --          withStore tidStore $ readIORef >=> killThread
 --          putStrLn "Yesod app is shutdown"
 --
---tidStoreNum :: Word32
---tidStoreNum = 1
+-- tidStoreNum :: Word32
+-- tidStoreNum = 1
 --
---modifyStoredIORef :: Store (IORef a) -> (a -> IO a) -> IO ()
---modifyStoredIORef store f = withStore store $ \ref -> do
+-- modifyStoredIORef :: Store (IORef a) -> (a -> IO a) -> IO ()
+-- modifyStoredIORef store f = withStore store $ \ref -> do
 --    v <- readIORef ref
 --    f v >>= writeIORef ref
+
+import "dumbtube" Application (develMain)
+import Prelude (IO)
+
+main :: IO ()
+main = develMain

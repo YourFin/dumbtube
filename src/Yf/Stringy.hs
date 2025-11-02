@@ -2,6 +2,8 @@
 
 module Yf.Stringy (snakeCase, trainCase, camelCase, pascalCase) where
 
+import Relude
+
 import Data.Char (toUpper, isUpper, toLower)
 --import Data.String (IsString())
 

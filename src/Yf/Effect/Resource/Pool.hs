@@ -5,7 +5,7 @@
 
 module Yf.Effect.Resource.Pool where
 
-import Prelude hiding (Reader, runReader)
+import Relude hiding (Reader, runReader)
 
 import Control.Concurrent qualified
 import Data.Pool qualified

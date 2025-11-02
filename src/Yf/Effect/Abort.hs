@@ -15,7 +15,7 @@ module Yf.Effect.Abort (
     runCli_,
 ) where
 
-import Prelude hiding (on)
+import Relude hiding (on)
 
 import Data.Text.Lazy qualified as Lazy
 import Data.Text.Lazy.IO qualified as Lazy

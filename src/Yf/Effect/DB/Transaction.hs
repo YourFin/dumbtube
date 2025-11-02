@@ -14,6 +14,8 @@ module Yf.Effect.DB.Transaction
   , Handler(..)
   ) where
 
+import Relude
+
 import Effectful (Eff, IOE, (:>))
 import Effectful qualified as Effectful
 import Effectful.Error.Dynamic (throwError)

@@ -6,6 +6,8 @@ module Yf.Tpm (
   random,
 ) where
 
+import Relude
+
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString
 import Foreign.C.Types

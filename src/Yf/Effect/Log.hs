@@ -48,7 +48,8 @@ module Yf.Effect.Log (
   runNoop,
 ) where
 
-import Prelude hiding (runReader, Reader, filter, error)
+import Relude hiding (runReader, Reader, filter, error)
+
 import Yf.Effect.Log.Level (Level(..), Rate(..))
 import qualified Yf.Effect.Log.Level as Level
 

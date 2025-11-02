@@ -6,6 +6,8 @@ module TestImport
     , module X
     ) where
 
+import Prelude
+
 import Application           (makeFoundation, makeLogWare)
 import ClassyPrelude         as X hiding (delete, deleteBy, Handler)
 import Database.Persist      as X hiding (get)

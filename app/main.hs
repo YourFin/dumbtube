@@ -1,5 +1,5 @@
 import Application (appMain)
-import Prelude (IO)
+import Relude (IO)
 
 main :: IO ()
 main = appMain

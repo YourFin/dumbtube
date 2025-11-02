@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Handler.HomeSpec (spec) where
 
+import Relude
+
 import TestImport
 
 spec :: Spec

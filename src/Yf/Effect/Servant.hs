@@ -15,6 +15,8 @@ module Yf.Effect.Servant (
   TLSSettings,
 ) where
 
+import Relude
+
 import Control.Monad.Except qualified as T
 import Data.Kind (Type)
 import Effectful (

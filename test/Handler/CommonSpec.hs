@@ -1,5 +1,7 @@
 module Handler.CommonSpec (spec) where
 
+import Relude
+
 import TestImport
 
 spec :: Spec

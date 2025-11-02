@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Handler.CommentSpec (spec) where
 
+import Relude
+
 import TestImport
 import Data.Aeson
 

@@ -1,6 +1,6 @@
 module Yf.Effect.Console where
 
-import Prelude hiding (Reader, error, runReader)
+import Relude hiding (Reader, error, runReader)
 
 import Data.Maybe (fromJust)
 import Effectful (Eff, IOE, Subset, (:>))

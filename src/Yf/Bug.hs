@@ -10,7 +10,7 @@ module Yf.Bug (
 )
 where
 
-import Prelude hiding (bug)
+import Relude hiding (bug)
 
 
 newtype LazyProgrammerError = LazyProgrammer LText

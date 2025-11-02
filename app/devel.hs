@@ -1,6 +1,6 @@
 {-# LANGUAGE PackageImports #-}
 import "dumbtube" Application (develMain)
-import Prelude (IO)
+import Relude
 
 main :: IO ()
 main = develMain

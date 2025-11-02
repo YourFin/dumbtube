@@ -2,6 +2,8 @@
 
 module Authn where
 
+import Relude
+
 {-
 Works two ways:
 1.

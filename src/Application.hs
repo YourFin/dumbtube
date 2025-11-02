@@ -2,6 +2,8 @@
 
 module Application where
 
+import Relude
+
 -- import Control.Monad.Except
 -- import Control.Monad.Reader
 
@@ -157,6 +159,9 @@ appMain = runMain $ do
     (tlsSettings "/home/pen/.local/yf/cert.pem" "/home/pen/.local/yf/key.pem")
     8443
     server1
+
+develMain :: IO ()
+develMain = appMain
 
 runMain :: Eff '[Sqlite, IOE] a -> IO a
 runMain action =
