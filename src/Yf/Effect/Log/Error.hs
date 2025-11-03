@@ -1,5 +1,3 @@
--- |
+module Yf.Effect.Log.Error () where
 
-module Yf.Effect.Log.Error where
-
-import Relude
+-- import Relude

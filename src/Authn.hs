@@ -1,8 +1,6 @@
--- |
+module Authn () where
 
-module Authn where
-
-import Relude
+-- import Relude
 
 {-
 Works two ways:
@@ -15,7 +13,6 @@ Works two ways:
   Client visits page
   Page looks up authn stored in browser
   Client signs response
-
 
 {
   rp: { // relying party

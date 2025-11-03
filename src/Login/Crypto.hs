@@ -3,7 +3,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoFieldSelectors #-}
 
-module Login.Crypto where
+module Login.Crypto (SignatureAlg (..), coseId, description, validate) where
 
 import Relude
 
@@ -13,12 +13,12 @@ import Crypto.Hash.Algorithms (SHA256 (..))
 import Crypto.Number.Serialize (os2ip)
 import Crypto.PubKey.ECDSA qualified as ECDSA
 import Crypto.PubKey.Ed25519 qualified as Ed25519
-import Crypto.PubKey.RSA qualified as RSA
+
+-- import Crypto.PubKey.RSA qualified as RSA
 import Data.ByteString qualified as ByteString
 import Data.String.Interpolate (i)
 import Data.ULID (ULID)
 import Optics
-import Optics.TH
 
 -- import Crypton.
 
@@ -146,7 +146,7 @@ validate' challenge resp
         pubKey <-
           ( challenge
               ^. #pubkey
-            )
+          )
             & Ed25519.publicKey
             & eitherCryptoError
             & first
@@ -156,7 +156,7 @@ validate' challenge resp
         sig <-
           ( resp
               ^. #signature
-            )
+          )
             & Ed25519.signature
             & eitherCryptoError
             & first

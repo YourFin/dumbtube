@@ -1,10 +1,11 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
+
 module Yf.Effect.Log (
   Log,
-
   -- Re-exports from other Log libs
-  Level(..),
-  Rate(..),
-
+  Level (..),
+  Rate (..),
   -- Re-exports from DF1
   Path,
   Segment,
@@ -19,7 +20,6 @@ module Yf.Effect.Log (
   key,
   value,
   message,
-
   -- Core effects
   attr_,
   push_,
@@ -27,7 +27,7 @@ module Yf.Effect.Log (
   logWithLevel,
   flush,
   askLogFn,
-
+  askDi,
   -- Helpers
 
   attr,
@@ -40,7 +40,6 @@ module Yf.Effect.Log (
   debug_,
   info_,
   error_,
-
   -- Runners
   runDiIO,
   runConsole,
@@ -48,25 +47,39 @@ module Yf.Effect.Log (
   runNoop,
 ) where
 
-import Relude hiding (runReader, Reader, filter, error)
+import Relude hiding (Reader, error, filter, runReader)
 
-import Yf.Effect.Log.Level (Level(..), Rate(..))
-import qualified Yf.Effect.Log.Level as Level
+import Yf.Effect.Log.Level (Level (..), Rate (..))
+import Yf.Effect.Log.Level qualified as Level
 
-import Effectful (Effect, Eff, IOE, (:>), UnliftStrategy(ConcUnlift), Persistence(Persistent), Limit(Unlimited))
-import qualified Effectful as Effectful
-import Effectful.Dispatch.Dynamic (interpret, reinterpret, localUnlift, localSeqUnlift)
+import Effectful (Eff, Effect, IOE, (:>))
+import Effectful qualified as Effectful
+import Effectful.Dispatch.Dynamic (interpret, localSeqUnlift, localUnlift, reinterpret)
 import Effectful.TH (makeEffect)
 
 -- TODO: try swapping out for static
-import Effectful.Reader.Dynamic (Reader(), runReader)
-import qualified Effectful.Reader.Dynamic as Reader
+
+import Df1 (
+  Key,
+  Message,
+  Path,
+  Segment,
+  ToKey,
+  ToMessage,
+  ToSegment,
+  ToValue,
+  Value,
+  key,
+  message,
+  segment,
+  value,
+ )
 import Di.Core (Di, log_level)
-import qualified Di.Core as Di
-import qualified Di.Handle as DiHandle
-import qualified Di.Df1 as DiDf1
-import Df1 (Path, Segment, ToSegment, Key, ToKey, Value, ToValue, Message, ToMessage, segment, key, value, message)
-import Data.Sequence (Seq)
+import Di.Core qualified as Di
+import Di.Df1 qualified as DiDf1
+import Di.Handle qualified as DiHandle
+import Effectful.Reader.Dynamic (runReader)
+import Effectful.Reader.Dynamic qualified as Reader
 
 data Log :: Effect where
   Attr_ :: Key -> Value -> m a -> Log m a
@@ -79,7 +92,7 @@ data Log :: Effect where
 makeEffect ''Log
 
 attr :: (ToValue v, Log :> es) => Key -> v -> Eff es a -> Eff es a
-attr key val action = attr_ key (Df1.value val) action
+attr attrKey attrVal action = attr_ attrKey (Df1.value attrVal) action
 
 push :: (ToSegment s, Log :> es) => s -> Eff es a -> Eff es a
 push s action = push_ (segment s) action
@@ -111,9 +124,9 @@ error_ rate msg = logWithLevel (Error rate) (message msg)
 runDiIO :: (IOE :> es) => Di Level Path Message -> Eff (Log : es) a -> Eff es a
 runDiIO di =
   reinterpret (runReader di) $ \env -> \case
-    Attr_ kk value action -> adaptDf1 (DiDf1.attr_ kk value) action env
-    Push_ segment action -> adaptDf1 (DiDf1.push segment) action env
-    Filter pred action -> adaptDf1 (Di.filter pred) action env
+    Attr_ kk attrValue action -> adaptDf1 (DiDf1.attr_ kk attrValue) action env
+    Push_ seg action -> adaptDf1 (DiDf1.push seg) action env
+    Filter predicate action -> adaptDf1 (Di.filter predicate) action env
     LogWithLevel level msg -> do
       di' <- Reader.ask @(Di Level Path Message)
       Di.log di' level msg
@@ -123,21 +136,25 @@ runDiIO di =
     AskLogFn -> do
       di' <- Reader.ask @(Di Level Path Message)
       pure (Di.log di')
-  where
-    adaptDf1 modifyDf1 action env = do
-      unliftStrat <- Effectful.unliftStrategy
-      localUnlift env unliftStrat $ \unlift ->
-        Reader.local @(Di Level Path Message) modifyDf1 $ unlift action
+    AskDi -> Reader.ask @(Di Level Path Message)
+ where
+  adaptDf1 modifyDf1 action env = do
+    unliftStrat <- Effectful.unliftStrategy
+    localUnlift env unliftStrat $ \unlift ->
+      Reader.local @(Di Level Path Message) modifyDf1 $ unlift action
 
 runConsole :: (IOE :> es) => Level -> Eff (Log : es) a -> Eff es a
 runConsole level action = do
   writeLog <- DiHandle.stderr lineRenderer
-  Di.new writeLog (\di -> runDiIO di $ do
-                      val <- filteredAction
-                      flush
-                      pure val)
-  where
-    filteredAction = filter (\msgLevel _ _ -> msgLevel >= level) action
+  Di.new
+    writeLog
+    ( \di -> runDiIO di $ do
+        val <- filteredAction
+        flush
+        pure val
+    )
+ where
+  filteredAction = filter (\msgLevel _ _ -> msgLevel >= level) action
 
 runConsole_ :: (IOE :> es) => Eff (Log : es) a -> Eff es a
 runConsole_ = runConsole (Level.Error Level.Rate)
@@ -151,22 +168,28 @@ runNoop =
     LogWithLevel _ _ -> pure ()
     Flush -> pure ()
     AskLogFn -> pure (\_ _ -> pure ())
-  where
-    adapt action env = localSeqUnlift env (\unlift ->
-      unlift action)
+ where
+  adapt action env =
+    localSeqUnlift
+      env
+      ( \unlift ->
+          unlift action
+      )
 
 -- TODO: systemd journal
 -- https://github.com/ocharles/libsystemd-journal
 
 lineRenderer :: DiHandle.LineRenderer Level Path Message
 lineRenderer = DiHandle.LineRendererUtf8 render
-  where
-    renderDf1 = case DiDf1.df1 of
-      DiHandle.LineRendererUtf8 renderDf1' -> renderDf1'
-    render supportsColors log =
-      renderDf1 supportsColors log{
-        log_level =
-          log
-          & log_level
-          & Level.toDf1
+ where
+  renderDf1 = case DiDf1.df1 of
+    DiHandle.LineRendererUtf8 renderDf1' -> renderDf1'
+  render supportsColors log =
+    renderDf1
+      supportsColors
+      log
+        { log_level =
+            log
+              & log_level
+              & Level.toDf1
         }

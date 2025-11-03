@@ -18,15 +18,13 @@ module Yf.Effect.Servant (
 import Relude
 
 import Control.Monad.Except qualified as T
-import Data.Kind (Type)
 import Effectful (
   Eff,
   Effect,
   IOE,
   Limit (..),
-  Persistence (Ephemeral, Persistent),
+  Persistence (Ephemeral),
   UnliftStrategy (..),
-  liftIO,
   withEffToIO,
   (:>),
  )
@@ -69,9 +67,9 @@ runWarpTLSServerSettingsContext ::
   -> Context context
   -> ServerT api (Eff (ErrorPage : es))
   -> Eff es ()
-runWarpTLSServerSettingsContext tlsSettings settings ctx server = withEffToIO webServerUnliftStrat $ \toIO ->
+runWarpTLSServerSettingsContext tlsSettings' settings ctx server = withEffToIO webServerUnliftStrat $ \toIO ->
   WarpTLS.runTLS
-    tlsSettings
+    tlsSettings'
     settings
     (Servant.serveWithContextT (Proxy @api) ctx (interpretServer toIO) server)
 
@@ -83,8 +81,8 @@ runWarpTLSServerSettings ::
   -> Warp.Settings
   -> ServerT api (Eff (ErrorPage : es))
   -> Eff es ()
-runWarpTLSServerSettings tlsSettings settings =
-  runWarpTLSServerSettingsContext @api tlsSettings settings EmptyContext
+runWarpTLSServerSettings tlsSettings' settings =
+  runWarpTLSServerSettingsContext @api tlsSettings' settings EmptyContext
 
 -- | Deploy an effectful server with a context.
 runWarpServerSettingsContext ::
@@ -124,9 +122,9 @@ runTLS ::
   -> Int
   -> ServerT api (Eff (ErrorPage : es))
   -> Eff es ()
-runTLS tlsSettings port =
+runTLS tlsSettings' port =
   runWarpTLSServerSettings @api
-    tlsSettings
+    tlsSettings'
     (Warp.defaultSettings & Warp.setPort port)
 
 type ErrorPage = ErrorStatic.Error ServerError

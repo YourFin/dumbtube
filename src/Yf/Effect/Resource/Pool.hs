@@ -2,14 +2,35 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoFieldSelectors #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module Yf.Effect.Resource.Pool where
+module Yf.Effect.Resource.Pool (
+  run',
+  withBorrowed,
+  PoolBuilder,
+  PoolBuilder_0,
+  PoolBuilder_1,
+  PoolBuilder_2,
+  resolveRelativeToThreadcount,
+  RelativeToThreadcount (..),
+  Pool,
+  pool,
+  createResource,
+  destroyResource,
+  threads,
+  systemThreads,
+  maxResidency,
+  poolTtl,
+  stripes,
+  runFromPool,
+  run,
+) where
 
 import Relude hiding (Reader, runReader)
 
 import Control.Concurrent qualified
 import Data.Pool qualified
-import Effectful (DispatchOf, Eff, Effect, IOE, Subset, inject, liftIO, withEffToIO, (:>))
+import Effectful (DispatchOf, Eff, Effect, IOE, Subset, inject, withEffToIO, (:>))
 import Effectful qualified
 import Effectful.Dispatch.Dynamic (
   interpret,
@@ -93,7 +114,7 @@ resolveRelativeToThreadcount expr threads =
   eval (RelExprRecip a) = recip (eval a)
 
 instance Show RelativeToThreadcount where
-  showsPrec precedence count = shows $ "RelativeToThreadcount[" <> go count precedence <> "]"
+  showsPrec precedence count = shows @String $ "RelativeToThreadcount[" <> go count precedence <> "]"
    where
     parens str = "(" <> str <> ")"
     binOp symPrec sym a b prec
@@ -209,8 +230,8 @@ run builder action = do
   let realStripes = resolveRelativeToThreadcount stripes capabilities
   let realMax = resolveRelativeToThreadcount max capabilities
   cfg' <- withEffToIO (Effectful.ConcUnlift Effectful.Persistent Effectful.Unlimited) $ \toIO ->
-    pure $
-      Data.Pool.defaultPoolConfig
+    pure
+      $ Data.Pool.defaultPoolConfig
         (toIO $ inject create)
         (toIO . inject . destroy)
         ttl

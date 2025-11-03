@@ -1,5 +1,3 @@
--- |
+module Yf.Effect () where
 
-module Yf.Effect where
-
-import Relude
+-- import Relude

@@ -1,18 +1,18 @@
-module Yf.Effect.Log.Level where
+module Yf.Effect.Log.Level (toDf1, Level (..), Rate (..)) where
 
 import Relude
 
-import qualified Df1 as Df1
+import Df1 qualified as Df1
 
 data Level
-  -- Sensitive Debug info; should not be exposed outside development
-  = TraceSensitive
-  -- Debug info
-  | Debug
-  -- Info on what the application is up to
-  | Info
-  -- Error; should page at @Rate@
-  | Error Rate
+  = -- Sensitive Debug info; should not be exposed outside development
+    TraceSensitive
+  | -- Debug info
+    Debug
+  | -- Info on what the application is up to
+    Info
+  | -- Error; should page at @Rate@
+    Error !Rate
   deriving (Eq, Show)
 
 instance Ord Level where

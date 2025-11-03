@@ -1,8 +1,8 @@
 {-# LANGUAGE PackageImports #-}
 
-module DevelMain where
+module DevelMain () where
 
-import Relude
+-- import Relude
 
 -- Running your app inside GHCi.
 --
@@ -108,8 +108,8 @@ import Relude
 --    v <- readIORef ref
 --    f v >>= writeIORef ref
 
-import "dumbtube" Application (develMain)
-import Prelude (IO)
+-- import Application (develMain)
+-- import Prelude (IO)
 
-main :: IO ()
-main = develMain
+-- main :: IO ()
+-- main = develMain

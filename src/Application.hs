@@ -1,45 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Application where
+module Application (develMain, runMain) where
 
 import Relude
 
 -- import Control.Monad.Except
 -- import Control.Monad.Reader
 
-import Data.Aeson
-import Data.Aeson.Types
-import Data.Attoparsec.ByteString
-import Data.ByteString (ByteString)
-import Data.List
-import Data.Maybe
-import Data.Time.Calendar
 import Effectful hiding ((:>))
 import Effectful qualified as Effectful
 import Effectful.Error.Static qualified as Error
 import Effectful.Exception qualified
 import Effectful.Fail (Fail, runFail)
-import GHC.Generics
 import Lucid
-import Network.HTTP.Media ((//), (/:))
 import Network.HTTP.Types.Header qualified as Header
-import Network.Wai
-import Network.Wai.Handler.Warp
-import Optics ((.~))
 import Servant
 import Servant.HTML.Lucid
 import Servant.Server qualified as ServantServer
-import Servant.Types.SourceT (source)
-import Streaming qualified as S
 import Streaming.Prelude qualified as S
-import System.Directory
 import Text.RawString.QQ (r)
-import Yf.Effect.Resource.Pool (maxResidency)
 import Yf.Effect.Resource.Pool qualified as Pool
 import Yf.Effect.Servant
 import Yf.Effect.Sqlite
 import Yf.Effect.Sqlite qualified as Sqlite
-import Yf.Tpm qualified as Tpm
 
 type GetHTML = Get '[HTML] (Html ())
 
@@ -143,8 +126,8 @@ failToErrorPage action = do
       h1_ "Hello, world!"
       fromString ex
 
-api :: Proxy API
-api = Proxy
+-- api :: Proxy API
+-- api = Proxy
 
 appMain :: IO ()
 appMain = runMain $ do
@@ -161,7 +144,9 @@ appMain = runMain $ do
     server1
 
 develMain :: IO ()
-develMain = appMain
+develMain = do
+  putStrLn "App running on 8443 :P"
+  appMain
 
 runMain :: Eff '[Sqlite, IOE] a -> IO a
 runMain action =

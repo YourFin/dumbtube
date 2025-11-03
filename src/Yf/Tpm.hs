@@ -8,8 +8,8 @@ module Yf.Tpm (
 
 import Relude
 
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as ByteString
+-- import Data.ByteString (ByteString)
+import Data.ByteString qualified as ByteString
 import Foreign.C.Types
 import Foreign.ForeignPtr
 import Foreign.Marshal.Alloc (alloca)
